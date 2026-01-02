@@ -12,6 +12,47 @@ import plotly.io as pio
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
+from openai import OpenAI
+
+def generate_ai_insights(kpis, mom_text, top_channel, top_product):
+    client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+
+    prompt = f"""
+You are a senior business analyst.
+
+Analyze the sales data below and write clear business insights.
+
+KPIs:
+- Total Sales: {kpis.get("total_sales")}
+- Total Orders: {kpis.get("total_orders")}
+- Total Profit: {kpis.get("total_profit")}
+
+Month on Month Summary:
+{mom_text}
+
+Top Channel Driver:
+{top_channel}
+
+Top Product Driver:
+{top_product}
+
+Tasks:
+1. Explain what happened this month.
+2. Explain likely reasons (hypotheses only).
+3. Give 3 actionable recommendations.
+
+Tone: professional, simple, client-ready.
+Format: bullet points.
+"""
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.3
+    )
+
+    return response.choices[0].message.content
+
 
 
 # ---------------------------
@@ -674,6 +715,37 @@ else:
 st.subheader("6) Auto Insights Summary (Rule-based)")
 insights_text = generate_insights(df_clean, colmap)
 st.text(insights_text)
+st.subheader("7) 🤖 AI Insights (ChatGPT)")
+
+# Simple drivers text (safe defaults)
+top_channel_driver = "N/A"
+top_product_driver = "N/A"
+
+try:
+    # reuse your existing rule-based insights text as MoM summary input
+    mom_summary_text = insights_text
+
+    # Optional: if you already compute drivers somewhere, plug them here
+    # Otherwise keep N/A (AI will still generate useful narrative)
+except Exception:
+    mom_summary_text = insights_text
+
+# Add a button so AI call happens only when user wants (saves cost)
+if st.button("Generate AI Insights"):
+    with st.spinner("Analyzing with AI..."):
+        try:
+            ai_text = generate_ai_insights(
+                kpis=kpis,
+                mom_text=mom_summary_text,
+                top_channel=top_channel_driver,
+                top_product=top_product_driver
+            )
+            st.markdown(ai_text)
+        except Exception as e:
+            st.error(f"AI Insights failed: {e}")
+else:
+    st.info("Click 'Generate AI Insights' to get a written analysis & recommendations.")
+
 
 # Downloads
 st.subheader("7) Downloads")
@@ -693,5 +765,6 @@ try:
 except Exception as e:
     st.error(f"PDF export failed: {e}")
     st.info("Fix: pip install kaleido reportlab")
+
 
 
