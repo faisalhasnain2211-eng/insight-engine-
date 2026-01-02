@@ -523,9 +523,9 @@ def export_pdf(kpis: dict, insights: str, charts: dict) -> bytes:
     c.setFont("Helvetica", 11)
     y = height - 115
     kpi_lines = [
-        ("Total Sales", kpis.get("total_sales")),
+        ("Total Sales (PKR)", kpis.get("total_sales")),
         ("Total Orders", kpis.get("total_orders")),
-        ("Total Profit", kpis.get("total_profit")),
+        ("Total Profit (PKR)", kpis.get("total_profit")),
         ("Total Items Sold", kpis.get("total_items_sold")),
         ("Total Products", kpis.get("total_products")),
     ]
@@ -618,11 +618,32 @@ kpis = compute_kpis(df_clean, colmap)
 st.subheader("4) KPIs")
 
 k1, k2, k3, k4, k5 = st.columns(5)
-k1.metric("Total Sales", "N/A" if kpis["total_sales"] is None else f"{kpis['total_sales']:,.2f}")
-k2.metric("Total Orders", f"{kpis['total_orders']:,}")
-k3.metric("Total Profit", "N/A" if kpis["total_profit"] is None else f"{kpis['total_profit']:,.2f}")
-k4.metric("Total Items Sold", "N/A" if kpis["total_items_sold"] is None else f"{kpis['total_items_sold']:,.0f}")
-k5.metric("Total Products", "N/A" if kpis["total_products"] is None else f"{kpis['total_products']:,}")
+
+k1.metric(
+    "Total Sales (PKR)",
+    "N/A" if kpis["total_sales"] is None else f"{kpis['total_sales']:,.0f}"
+)
+
+k2.metric(
+    "Total Orders",
+    f"{kpis['total_orders']:,}"
+)
+
+k3.metric(
+    "Total Profit (PKR)",
+    "N/A" if kpis["total_profit"] is None else f"{kpis['total_profit']:,.0f}"
+)
+
+k4.metric(
+    "Total Items Sold",
+    "N/A" if kpis["total_items_sold"] is None else f"{kpis['total_items_sold']:,.0f}"
+)
+
+k5.metric(
+    "Total Products",
+    "N/A" if kpis["total_products"] is None else f"{kpis['total_products']:,}"
+)
+
 
 # Charts
 st.subheader("5) Charts (with Data Labels)")
@@ -672,4 +693,5 @@ try:
 except Exception as e:
     st.error(f"PDF export failed: {e}")
     st.info("Fix: pip install kaleido reportlab")
+
 
