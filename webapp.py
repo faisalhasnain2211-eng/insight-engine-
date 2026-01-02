@@ -112,53 +112,72 @@ def detect_columns(df: pd.DataFrame) -> dict:
     def name_has(col, patterns):
         return any(p in col for p in patterns)
 
+    # -------- Primary detection (by column name) --------
     for c in cols:
         cl = str(c).lower()
 
         if colmap["age"] is None and name_has(cl, ["age"]):
             colmap["age"] = c
+
         if colmap["gender"] is None and name_has(cl, ["gender", "sex"]):
             colmap["gender"] = c
+
         if colmap["date"] is None and name_has(cl, ["date", "datetime", "order_date", "invoice_date"]):
             colmap["date"] = c
-        if colmap["sales"] is None and name_has(cl, ["sales", "revenue", "amount", "net_sales", "total_sales", "sale"]):
+
+        if colmap["sales"] is None and name_has(
+            cl, ["sales", "revenue", "amount", "net_sales", "total_sales", "sale"]
+        ):
             colmap["sales"] = c
+
         if colmap["profit"] is None and name_has(cl, ["profit", "margin"]):
             colmap["profit"] = c
+
         if colmap["qty"] is None and name_has(cl, ["qty", "quantity", "units", "items_sold"]):
             colmap["qty"] = c
+
         if colmap["product"] is None and name_has(cl, ["product", "sku", "item", "product_name"]):
             colmap["product"] = c
-        if colmap["channel"] is None and name_has(cl, ["channel", "source", "platform", "store", "medium"]):
+
+        if colmap["channel"] is None and name_has(
+            cl, ["channel", "source", "platform", "store", "medium"]
+        ):
             colmap["channel"] = c
 
-        if colmap["order_id"] is None and name_has(cl, ["order_id", "invoice_id", "receipt_id", "transaction_id"]):
+        if colmap["order_id"] is None and name_has(
+            cl, ["order_id", "invoice_id", "receipt_id", "transaction_id"]
+        ):
             colmap["order_id"] = c
 
-        if colmap["id"] is None and (cl.endswith("_id") or cl == "id" or "client_id" in cl or "customer_id" in cl):
+        if colmap["id"] is None and (
+            cl.endswith("_id") or cl == "id" or "client_id" in cl or "customer_id" in cl
+        ):
             colmap["id"] = c
 
-    # Age fallback (0-120 numeric)
-   if colmap["age"] is None:
-    for c in cols:
-        cl = str(c).lower()
+    # -------- Age fallback (STRICT & SAFE) --------
+    if colmap["age"] is None:
+        for c in cols:
+            cl = str(c).lower()
 
-        # 🚫 Ignore quantity-like columns
-        if any(x in cl for x in ["qty", "quantity", "units", "items", "sold"]):
-            continue
+            # 🚫 Ignore quantity-like columns
+            if any(x in cl for x in ["qty", "quantity", "units", "items", "sold"]):
+                continue
 
-        s = coerce_numeric(df[c])
-        if s.notna().mean() > 0.8:
-            valid = s.dropna()
+            s = coerce_numeric(df[c])
+            if s.notna().mean() > 0.8:
+                valid = s.dropna()
 
-            # ✅ Strict age detection
-            if (
-                len(valid) > 0
-                and valid.between(5, 100).mean() > 0.95
-                and valid.nunique() > 10
-            ):
-                colmap["age"] = c
-                break
+                # ✅ Strict age detection
+                if (
+                    len(valid) > 0
+                    and valid.between(5, 100).mean() > 0.95
+                    and valid.nunique() > 10
+                ):
+                    colmap["age"] = c
+                    break
+
+    return colmap
+
 
 
     # Date fallback
@@ -778,6 +797,7 @@ try:
 except Exception as e:
     st.error(f"PDF export failed: {e}")
     st.info("Fix: pip install kaleido reportlab")
+
 
 
 
