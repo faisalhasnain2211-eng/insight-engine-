@@ -139,14 +139,27 @@ def detect_columns(df: pd.DataFrame) -> dict:
             colmap["id"] = c
 
     # Age fallback (0-120 numeric)
-    if colmap["age"] is None:
-        for c in cols:
-            s = coerce_numeric(df[c])
-            if s.notna().mean() > 0.8:
-                valid = s.dropna()
-                if len(valid) > 0 and (valid.between(0, 120).mean() > 0.9):
-                    colmap["age"] = c
-                    break
+   if colmap["age"] is None:
+    for c in cols:
+        cl = str(c).lower()
+
+        # 🚫 Ignore quantity-like columns
+        if any(x in cl for x in ["qty", "quantity", "units", "items", "sold"]):
+            continue
+
+        s = coerce_numeric(df[c])
+        if s.notna().mean() > 0.8:
+            valid = s.dropna()
+
+            # ✅ Strict age detection
+            if (
+                len(valid) > 0
+                and valid.between(5, 100).mean() > 0.95
+                and valid.nunique() > 10
+            ):
+                colmap["age"] = c
+                break
+
 
     # Date fallback
     if colmap["date"] is None:
@@ -765,6 +778,7 @@ try:
 except Exception as e:
     st.error(f"PDF export failed: {e}")
     st.info("Fix: pip install kaleido reportlab")
+
 
 
 
