@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import plotly.io as pio
 
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
@@ -469,9 +470,12 @@ def make_charts(df: pd.DataFrame, colmap: dict):
 # ---------------------------
 # PDF Export
 # ---------------------------
+
+
 def fig_to_png_bytes(fig) -> bytes:
-    # requires kaleido installed
-    return fig.to_image(format="png", scale=2)
+    # Force kaleido renderer (no browser dependency)
+    return pio.to_image(fig, format="png", scale=2, engine="kaleido")
+
 
 
 def export_pdf(kpis: dict, insights: str, charts: dict) -> bytes:
@@ -668,3 +672,4 @@ try:
 except Exception as e:
     st.error(f"PDF export failed: {e}")
     st.info("Fix: pip install kaleido reportlab")
+
